@@ -59,7 +59,7 @@ const Auth = {
         }
       } catch (e) {
         console.error('MSAL redirect error', e);
-        UI.showToast('Error al conectar con Microsoft');
+        App.toast('Error al conectar con Microsoft');
       }
     }
 
@@ -89,7 +89,7 @@ const Auth = {
   // ── Google ───────────────────────────────────────────────────
   loginGoogle() {
     if (typeof google === 'undefined') {
-      UI.showToast('Cargando Google... intenta en un momento');
+      App.toast('Cargando Google... intenta en un momento');
       return;
     }
     this._setLoading('google', true);
@@ -100,7 +100,7 @@ const Auth = {
       callback: async resp => {
         if (resp.error) {
           this._setLoading('google', false);
-          UI.showToast('No se pudo conectar con Google');
+          App.toast('No se pudo conectar con Google');
           return;
         }
         const info = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -137,7 +137,7 @@ const Auth = {
     } catch (e) {
       console.error(e);
       this._setLoading('microsoft', false);
-      UI.showToast('No se pudo conectar con Microsoft');
+      App.toast('No se pudo conectar con Microsoft');
     }
   },
 
@@ -145,7 +145,7 @@ const Auth = {
   async _afterLogin(provider, token, email, name) {
     Cloud.init(provider, token);
 
-    UI.showToast('Sincronizando datos...');
+    App.toast('Sincronizando datos...');
     const cloudData = await Cloud.load();
 
     if (cloudData) {
@@ -154,7 +154,7 @@ const Auth = {
       this.saveSession({ provider, token, email, name });
       document.getElementById('login-screen').classList.add('hidden');
       document.getElementById('app').style.visibility = 'visible';
-      UI.showToast(`Hola de nuevo, ${name.split(' ')[0]} 👋`);
+      App.toast(`Hola de nuevo, ${name.split(' ')[0]} 👋`);
       App.init();
     } else {
       // Usuario nuevo: ir al onboarding con email pre-cargado
