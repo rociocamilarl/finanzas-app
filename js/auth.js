@@ -1,6 +1,6 @@
 // OAuth — Google Drive + OneDrive
 // ⚠️  Reemplaza estos IDs con los tuyos antes de desplegar
-const GOOGLE_CLIENT_ID    = 'TU_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID    = '89875406015-lcdbqhptm4bikmg1d7senj6c2ud6mgjf.apps.googleusercontent.com';
 const MICROSOFT_CLIENT_ID = 'TU_MICROSOFT_CLIENT_ID';
 
 const Auth = {
