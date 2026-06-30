@@ -288,19 +288,43 @@ const UI = {
         <div class="empty-state"><div class="empty-icon">🎯</div>Sin metas configuradas</div>
       </div>`;
 
+    const saldoTeorico = Calc.saldoDisponible();
+
     return metas.map(m => {
-      const pct   = Calc.porcentaje(m.acumulado, m.objetivo);
-      const meses = m.fecha_objetivo ? Calc.mesesHasta(m.fecha_objetivo) : null;
+      const pct      = Calc.porcentaje(m.acumulado, m.objetivo);
+      const meses    = m.fecha_objetivo ? Calc.mesesHasta(m.fecha_objetivo) : null;
+      const restante = Math.max(0, m.objetivo - m.acumulado);
+      const mensual  = (meses && meses > 0) ? Math.ceil(restante / meses) : null;
+      const pctSaldo = (mensual && saldoTeorico > 0) ? Calc.porcentaje(mensual, saldoTeorico) : null;
+
+      const planHtml = mensual !== null ? `
+        <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin:10px 0;border:1px solid var(--border)">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-s);margin-bottom:6px">Plan mensual para cumplir la meta</div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:20px;font-weight:700;color:var(--primary)">${this.clp(mensual)}<span style="font-size:12px;font-weight:400;color:var(--text-s)">/mes</span></div>
+              <div style="font-size:12px;color:var(--text-s);margin-top:2px">durante ${meses} meses</div>
+            </div>
+            ${pctSaldo !== null ? `<div style="text-align:right">
+              <div style="font-size:16px;font-weight:700;color:${pctSaldo > 80 ? 'var(--danger)' : pctSaldo > 50 ? 'var(--warning)' : 'var(--success)'}">${this.pct(pctSaldo)}</div>
+              <div style="font-size:11px;color:var(--text-s)">del saldo teórico</div>
+            </div>` : ''}
+          </div>
+        </div>` : (restante <= 0 ? `
+        <div style="background:#f0fdf4;border-radius:10px;padding:10px 12px;margin:10px 0;text-align:center;color:#16a34a;font-weight:600">✅ ¡Meta cumplida!</div>` : `
+        <div style="background:var(--bg);border-radius:10px;padding:10px 12px;margin:10px 0;color:var(--text-s);font-size:13px">Sin fecha objetivo — define una fecha para calcular el plan mensual</div>`);
+
       return `
         <div class="card">
           <div class="card-title">🎯 ${m.nombre}</div>
           <div class="card-big-number">${this.clp(m.acumulado)}</div>
           <div class="card-sub">de ${this.clp(m.objetivo)}${meses !== null ? ` · ${meses} meses restantes` : ''}</div>
           <div class="progress-wrap mt-4">
-            <div class="progress-header"><span>${this.pct(pct)}</span>${m.fecha_objetivo ? `<span>${m.fecha_objetivo}</span>` : ''}</div>
+            <div class="progress-header"><span>${this.pct(pct)} avance</span>${m.fecha_objetivo ? `<span>${m.fecha_objetivo}</span>` : ''}</div>
             ${this.progressBar(pct, 'fill-blue')}
           </div>
-          <form class="form-ahorro form-section" data-id="${m.id}" style="margin-top:12px">
+          ${planHtml}
+          <form class="form-ahorro form-section" data-id="${m.id}" style="margin-top:8px">
             <div style="display:flex;gap:8px">
               <input type="number" class="form-input ahorro-monto" placeholder="Depositar CLP..." style="flex:1">
               <button type="submit" class="btn btn-success btn-sm">+ Ahorro</button>
