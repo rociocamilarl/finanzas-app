@@ -14,6 +14,16 @@ const Calc = {
     return this.totalIngresos() - this.totalGastosFijos();
   },
 
+  saldoReal() {
+    const movs = Store.getMovimientos();
+    let saldo = 0;
+    for (const m of movs) {
+      if (m.tipo === 'Saldo inicial') { saldo = m.monto; }
+      else { saldo += m.monto; }
+    }
+    return saldo;
+  },
+
   saldoTotalDeudas() {
     return Store.getDeudas().reduce((s, d) => s + d.saldo, 0);
   },

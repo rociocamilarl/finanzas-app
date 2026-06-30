@@ -24,10 +24,11 @@ const UI = {
   // ── Dashboard ───────────────────────────────────────────────
   renderDashboard() {
     const perfil   = Store.getPerfil();
-    const ingresos = Calc.totalIngresos();
-    const gastos   = Calc.totalGastosFijos();
-    const saldo    = Calc.saldoDisponible();
-    const pctGasto = Calc.porcentaje(gastos, ingresos);
+    const ingresos  = Calc.totalIngresos();
+    const gastos    = Calc.totalGastosFijos();
+    const saldo     = Calc.saldoDisponible();
+    const saldoReal = Calc.saldoReal();
+    const pctGasto  = Calc.porcentaje(gastos, ingresos);
     const metas    = Store.getMetas();
     const deudas   = Store.getDeudas();
     const alertas  = Calc.alertas();
@@ -69,13 +70,18 @@ const UI = {
       ${alertHtml}
       <div class="card">
         <div class="card-title">Resumen · ${this.mesNombre(hoy.getFullYear(), hoy.getMonth()+1)}</div>
-        <div class="stat-grid" style="margin-bottom:0">
-          <div><div class="stat-label">Ingresos</div><div class="stat-value green" style="font-size:16px">${this.clp(ingresos)}</div></div>
-          <div><div class="stat-label">Gastos fijos</div><div class="stat-value red" style="font-size:16px">${this.clp(gastos)}</div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:0">
+          <div><div class="stat-label">Ingresos</div><div class="stat-value green" style="font-size:14px">${this.clp(ingresos)}</div></div>
+          <div><div class="stat-label">Gastos fijos</div><div class="stat-value red" style="font-size:14px">${this.clp(gastos)}</div></div>
+          <div>
+            <div class="stat-label">Saldo teórico</div>
+            <div class="stat-value blue" style="font-size:14px">${this.clp(saldo)}</div>
+            <div style="font-size:9px;color:var(--text-s);margin-top:2px">ingresos − gastos</div>
+          </div>
         </div>
         <div class="divider"></div>
-        <div class="stat-label">Saldo disponible</div>
-        <div class="card-big-number ${saldo < 0 ? 'red' : ''}">${this.clp(saldo)}</div>
+        <div class="stat-label">Saldo real en cuenta</div>
+        <div class="card-big-number ${saldoReal < 0 ? 'red' : ''}">${this.clp(saldoReal)}</div>
         <div class="progress-wrap mt-4">
           <div class="progress-header"><span>% gasto / ingreso</span><span>${this.pct(pctGasto)}</span></div>
           ${this.progressBar(pctGasto, pctGasto > 80 ? 'fill-red' : pctGasto > 65 ? 'fill-orange' : 'fill-green')}
