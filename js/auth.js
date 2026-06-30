@@ -25,8 +25,43 @@ const Auth = {
     location.reload();
   },
 
-  init() {
+  async init() {
     Store.init();
+
+    // Manejar retorno de redirección Microsoft
+    const msalPending = sessionStorage.getItem('msal_pending');
+    if (msalPending) {
+      sessionStorage.removeItem('msal_pending');
+      try {
+        await this._loadMsal();
+        this.msalApp = new msal.PublicClientApplication({
+          auth: {
+            clientId: MICROSOFT_CLIENT_ID,
+            authority: 'https://login.microsoftonline.com/common',
+            redirectUri: location.origin + location.pathname
+          },
+          cache: { cacheLocation: 'sessionStorage' }
+        });
+        await this.msalApp.initialize();
+        const result = await this.msalApp.handleRedirectPromise();
+        if (result) {
+          const tokenResp = await this.msalApp.acquireTokenSilent({
+            scopes: ['Files.ReadWrite.AppFolder'],
+            account: result.account
+          });
+          await this._afterLogin(
+            'microsoft',
+            tokenResp.accessToken,
+            result.account.username,
+            result.account.name || result.account.username
+          );
+          return;
+        }
+      } catch (e) {
+        console.error('MSAL redirect error', e);
+        UI.showToast('Error al conectar con Microsoft');
+      }
+    }
 
     // Sesión activa
     if (this.isAuthenticated()) {
@@ -43,7 +78,7 @@ const Auth = {
     // Sin onboarding: mostrar login OAuth
     if (Store.isOnboardingDone()) {
       document.getElementById('app').style.visibility = 'hidden';
-      return; // login screen ya visible en HTML
+      return;
     }
 
     // Sin onboarding Y sin sesión: ir a onboarding
@@ -82,33 +117,23 @@ const Auth = {
   async loginMicrosoft() {
     this._setLoading('microsoft', true);
     try {
-      if (!this.msalApp) {
-        await this._loadMsal();
-        this.msalApp = new msal.PublicClientApplication({
-          auth: {
-            clientId: MICROSOFT_CLIENT_ID,
-            authority: 'https://login.microsoftonline.com/common',
-            redirectUri: location.origin + location.pathname
-          },
-          cache: { cacheLocation: 'sessionStorage' }
-        });
-        await this.msalApp.initialize();
-      }
+      await this._loadMsal();
+      this.msalApp = new msal.PublicClientApplication({
+        auth: {
+          clientId: MICROSOFT_CLIENT_ID,
+          authority: 'https://login.microsoftonline.com/common',
+          redirectUri: location.origin + location.pathname
+        },
+        cache: { cacheLocation: 'sessionStorage' }
+      });
+      await this.msalApp.initialize();
 
-      const result = await this.msalApp.loginPopup({
+      // Marcar que venimos de redirect Microsoft antes de salir
+      sessionStorage.setItem('msal_pending', '1');
+      await this.msalApp.loginRedirect({
         scopes: ['User.Read', 'Files.ReadWrite.AppFolder']
       });
-      const tokenResp = await this.msalApp.acquireTokenSilent({
-        scopes: ['Files.ReadWrite.AppFolder'],
-        account: result.account
-      });
-
-      await this._afterLogin(
-        'microsoft',
-        tokenResp.accessToken,
-        result.account.username,
-        result.account.name || result.account.username
-      );
+      // La página se redirige — el código de abajo no se ejecuta
     } catch (e) {
       console.error(e);
       this._setLoading('microsoft', false);
