@@ -57,8 +57,8 @@ const Onboarding = {
         <input class="form-input" id="ob-nombre" type="text" placeholder="Tu nombre" value="${this.datos.perfil.nombre}" autocomplete="given-name">
       </div>
       <div class="form-group">
-        <label class="form-label">Email (opcional)</label>
-        <input class="form-input" id="ob-email" type="email" placeholder="tu@email.com" value="${this.datos.perfil.email}" autocomplete="email">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="ob-email" type="email" placeholder="tu@email.com" value="${this.datos.perfil.email}" autocomplete="email" required>
       </div>`;
   },
 
@@ -285,9 +285,11 @@ const Onboarding = {
   guardarPaso() {
     if (this.paso === 1) {
       const nombre = document.getElementById('ob-nombre').value.trim();
+      const email  = document.getElementById('ob-email').value.trim();
       if (!nombre) { this.error('Ingresa tu nombre'); return false; }
+      if (!email || !email.includes('@')) { this.error('Ingresa un email válido'); return false; }
       this.datos.perfil.nombre = nombre;
-      this.datos.perfil.email  = document.getElementById('ob-email').value.trim();
+      this.datos.perfil.email  = email;
     }
     if (this.paso === 2) {
       const usaUF = document.getElementById('ob-usa-uf').checked;
