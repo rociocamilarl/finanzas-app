@@ -176,7 +176,7 @@ const Auth = {
     return new Promise((res, rej) => {
       if (typeof msal !== 'undefined') { res(); return; }
       const s = document.createElement('script');
-      s.src = 'https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js';
+      s.src = 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2/dist/msal-browser.min.js';
       s.onload  = res;
       s.onerror = rej;
       document.head.appendChild(s);
