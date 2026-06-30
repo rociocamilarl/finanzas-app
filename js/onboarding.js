@@ -239,6 +239,7 @@ const Onboarding = {
   bindLista(tipo) {
     const addBtns = { ing: 'ob-add-ing', gasto: 'ob-add-gasto', deuda: 'ob-add-deuda', meta: 'ob-add-meta' };
     document.getElementById(addBtns[tipo])?.addEventListener('click', () => {
+      this._capturarDOM(); // guardar lo escrito antes de re-renderizar
       if (tipo === 'ing')   this.datos.ingresos.push({ concepto: '', monto: 0 });
       if (tipo === 'gasto') this.datos.gastos_fijos.push({ concepto: '', monto: 0, es_uf: false });
       if (tipo === 'deuda') this.datos.deudas.push({ id: Date.now().toString(), nombre: '', saldo: 0, cuota: 0, vencimiento: '', tiene_tramos: false });
@@ -247,6 +248,7 @@ const Onboarding = {
     });
     document.querySelectorAll(`.ob-del-${tipo}`).forEach(btn => {
       btn.addEventListener('click', () => {
+        this._capturarDOM(); // guardar lo escrito antes de re-renderizar
         const i = parseInt(btn.dataset.i);
         if (tipo === 'ing')   this.datos.ingresos.splice(i, 1);
         if (tipo === 'gasto') this.datos.gastos_fijos.splice(i, 1);
@@ -255,6 +257,51 @@ const Onboarding = {
         this.renderPaso();
       });
     });
+  },
+
+  // Captura los valores actuales del DOM y los guarda en this.datos
+  _capturarDOM() {
+    if (this.paso === 3) {
+      document.querySelectorAll('.ob-ing-nombre').forEach((el, i) => {
+        if (this.datos.ingresos[i]) this.datos.ingresos[i].concepto = el.value;
+      });
+      document.querySelectorAll('.ob-ing-monto').forEach((el, i) => {
+        if (this.datos.ingresos[i]) this.datos.ingresos[i].monto = parseFloat(el.value) || 0;
+      });
+    }
+    if (this.paso === 4) {
+      document.querySelectorAll('.ob-g-nombre').forEach((el, i) => {
+        if (this.datos.gastos_fijos[i]) this.datos.gastos_fijos[i].concepto = el.value;
+      });
+      document.querySelectorAll('.ob-g-monto').forEach((el, i) => {
+        if (this.datos.gastos_fijos[i]) this.datos.gastos_fijos[i].monto = parseFloat(el.value) || 0;
+      });
+    }
+    if (this.paso === 5) {
+      document.querySelectorAll('.ob-d-nombre').forEach((el, i) => {
+        if (this.datos.deudas[i]) this.datos.deudas[i].nombre = el.value;
+      });
+      document.querySelectorAll('.ob-d-saldo').forEach((el, i) => {
+        if (this.datos.deudas[i]) this.datos.deudas[i].saldo = parseFloat(el.value) || 0;
+      });
+      document.querySelectorAll('.ob-d-cuota').forEach((el, i) => {
+        if (this.datos.deudas[i]) this.datos.deudas[i].cuota = parseFloat(el.value) || 0;
+      });
+      document.querySelectorAll('.ob-d-venc').forEach((el, i) => {
+        if (this.datos.deudas[i]) this.datos.deudas[i].vencimiento = el.value;
+      });
+    }
+    if (this.paso === 6) {
+      document.querySelectorAll('.ob-m-nombre').forEach((el, i) => {
+        if (this.datos.metas[i]) this.datos.metas[i].nombre = el.value;
+      });
+      document.querySelectorAll('.ob-m-objetivo').forEach((el, i) => {
+        if (this.datos.metas[i]) this.datos.metas[i].objetivo = parseFloat(el.value) || 0;
+      });
+      document.querySelectorAll('.ob-m-fecha').forEach((el, i) => {
+        if (this.datos.metas[i]) this.datos.metas[i].fecha_objetivo = el.value;
+      });
+    }
   },
 
   // ── Guardar datos del paso actual ────────────────────────────
