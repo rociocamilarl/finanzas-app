@@ -41,22 +41,23 @@ const UI = {
       </div>`
     ).join('');
 
-    const metasHtml = metas.length ? metas.map(m => {
-      const pct = Calc.porcentaje(m.acumulado, m.objetivo);
+    const metasHtml = metas.length ? metas.map((m, i) => {
+      const pct   = Calc.porcentaje(m.acumulado, m.objetivo);
       const meses = m.fecha_objetivo ? Calc.mesesHasta(m.fecha_objetivo) : null;
       return `
-        <div style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-            <span style="font-weight:600">🎯 ${m.nombre}</span>
-            <span class="text-muted">${meses !== null ? meses + ' meses' : ''}</span>
-          </div>
-          <div style="font-size:13px;margin-bottom:4px">
-            ${this.clp(m.acumulado)} <span class="text-muted">/ ${this.clp(m.objetivo)}</span>
+        ${i > 0 ? '<div class="divider"></div>' : ''}
+        <div class="stat-label">🎯 ${m.nombre}</div>
+        <div style="font-size:15px;font-weight:700;margin:2px 0">
+          ${this.clp(m.acumulado)} <span class="text-muted">/ ${this.clp(m.objetivo)}</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-header">
+            <span>${this.pct(pct)} avance</span>
+            <span>${meses !== null ? meses + ' meses' : 'sin fecha'}</span>
           </div>
           ${this.progressBar(pct, 'fill-blue')}
-          <div style="font-size:11px;color:var(--text-s);margin-top:2px;text-align:right">${this.pct(pct)}</div>
         </div>`;
-    }).join('<div class="divider"></div>')
+    }).join('')
     : '<div class="text-muted">Sin metas configuradas</div>';
 
     const deudasHtml = deudas.length ? deudas.map(d => `
