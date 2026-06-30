@@ -313,66 +313,147 @@ const UI = {
   renderConfig() {
     const sup    = Store.getSupuestos();
     const perfil = Store.getPerfil();
+    const ing    = Store.getIngresos();
     const gastos = Store.getGastosFijos();
+    const deudas = Store.getDeudas();
+    const metas  = Store.getMetas();
 
     return `
+      <!-- Perfil -->
       <div class="card">
-        <div class="card-title">Parámetros</div>
-        ${sup.usa_uf ? `<div class="config-row"><span class="config-label">Valor UF</span><input type="number" class="config-input" id="cfg-uf" value="${sup.uf}" step="0.01"></div>` : ''}
-        ${sup.usa_tipo_cambio ? `<div class="config-row"><span class="config-label">${sup.tipo_cambio_label}/CLP</span><input type="number" class="config-input" id="cfg-tc" value="${sup.tipo_cambio}" step="0.01"></div>` : ''}
-        ${!sup.usa_uf && !sup.usa_tipo_cambio ? '<div class="text-muted">Sin parámetros variables configurados.</div>' : ''}
-        ${sup.usa_uf || sup.usa_tipo_cambio ? '<button class="btn btn-primary" id="btn-save-cfg" style="margin-top:12px">Guardar cambios</button>' : ''}
+        <div class="card-title">👤 Perfil</div>
+        <div class="form-group"><label class="form-label">Nombre</label>
+          <input class="form-input" id="cfg-nombre" value="${perfil.nombre || ''}"></div>
+        <div class="form-group"><label class="form-label">Email</label>
+          <input class="form-input" id="cfg-email" type="email" value="${perfil.email || ''}"></div>
+        <button class="btn btn-primary cfg-save" data-sec="perfil" style="margin-top:4px">Guardar perfil</button>
       </div>
 
+      <!-- Parámetros -->
       <div class="card">
-        <div class="card-title">Gastos fijos</div>
-        <ul class="row-list">
-          ${gastos.map(g => {
-            const monto = g.es_uf ? g.monto_uf * (sup.uf || 0) : g.monto;
-            return `<li class="row-item">
-              <span class="row-label">${g.concepto}${g.es_uf ? ' <span class="chip">UF</span>' : ''}</span>
-              <span class="row-amount neg">${this.clp(monto)}</span>
-            </li>`;
-          }).join('')}
-          <li class="row-item" style="font-weight:700">
-            <span>TOTAL</span><span class="row-amount neg">${this.clp(Calc.totalGastosFijos())}</span>
-          </li>
-        </ul>
+        <div class="card-title">⚙️ Parámetros</div>
+        <div class="config-row"><span class="config-label">Usa UF</span>
+          <input type="checkbox" id="cfg-usa-uf" ${sup.usa_uf?'checked':''}></div>
+        <div id="cfg-uf-row" style="${sup.usa_uf?'':'display:none'}">
+          <div class="config-row"><span class="config-label">Valor UF</span>
+            <input type="number" class="config-input" id="cfg-uf" value="${sup.uf||''}" step="0.01"></div>
+        </div>
+        <div class="config-row" style="margin-top:8px"><span class="config-label">Usa tipo cambio</span>
+          <input type="checkbox" id="cfg-usa-tc" ${sup.usa_tipo_cambio?'checked':''}></div>
+        <div id="cfg-tc-row" style="${sup.usa_tipo_cambio?'':'display:none'}">
+          <div class="config-row"><span class="config-label">Moneda</span>
+            <input class="config-input" id="cfg-tc-label" value="${sup.tipo_cambio_label||''}"></div>
+          <div class="config-row"><span class="config-label">Valor CLP</span>
+            <input type="number" class="config-input" id="cfg-tc" value="${sup.tipo_cambio||''}" step="0.01"></div>
+        </div>
+        <button class="btn btn-primary cfg-save" data-sec="supuestos" style="margin-top:12px">Guardar parámetros</button>
       </div>
 
+      <!-- Ingresos -->
       <div class="card">
-        <div class="card-title">Exportar / Importar</div>
+        <div class="card-title">💰 Ingresos mensuales</div>
+        <div id="cfg-ing-list">
+          ${ing.map((it, i) => `
+            <div class="cfg-item-row" data-i="${i}">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="form-input cfg-ing-concepto" value="${it.concepto}" style="flex:1" placeholder="Concepto">
+                <button class="btn btn-danger btn-sm cfg-del-ing" data-i="${i}">✕</button>
+              </div>
+              <input class="form-input cfg-ing-monto" type="number" value="${it.monto}" placeholder="Monto CLP" style="margin-top:6px">
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-outline cfg-add" data-list="cfg-ing-list" data-tpl="ing" style="margin-top:8px">+ Agregar ingreso</button>
+        <button class="btn btn-primary cfg-save" data-sec="ingresos" style="margin-top:8px">Guardar ingresos</button>
+      </div>
+
+      <!-- Gastos fijos -->
+      <div class="card">
+        <div class="card-title">💸 Gastos fijos mensuales</div>
+        <div id="cfg-gasto-list">
+          ${gastos.map((g, i) => `
+            <div class="cfg-item-row" data-i="${i}">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="form-input cfg-g-concepto" value="${g.concepto}" style="flex:1" placeholder="Concepto">
+                <button class="btn btn-danger btn-sm cfg-del-gasto" data-i="${i}">✕</button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:6px;align-items:center">
+                ${sup.usa_uf ? `<label style="font-size:12px;display:flex;gap:4px;align-items:center;white-space:nowrap">
+                  <input type="checkbox" class="cfg-g-esuf" ${g.es_uf?'checked':''}> en UF</label>` : ''}
+                <input class="form-input cfg-g-monto" type="number" value="${g.es_uf?(g.monto_uf||0):g.monto}" placeholder="Monto" style="flex:1">
+              </div>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-outline cfg-add" data-list="cfg-gasto-list" data-tpl="gasto" style="margin-top:8px">+ Agregar gasto</button>
+        <button class="btn btn-primary cfg-save" data-sec="gastos" style="margin-top:8px">Guardar gastos</button>
+      </div>
+
+      <!-- Deudas -->
+      <div class="card">
+        <div class="card-title">🏦 Deudas</div>
+        <div id="cfg-deuda-list">
+          ${deudas.map((d, i) => `
+            <div class="cfg-item-row" data-i="${i}" data-id="${d.id}">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="form-input cfg-d-nombre" value="${d.nombre}" style="flex:1" placeholder="Nombre deuda">
+                <button class="btn btn-danger btn-sm cfg-del-deuda" data-i="${i}">✕</button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <div style="flex:1"><label class="form-label">Saldo</label>
+                  <input class="form-input cfg-d-saldo" type="number" value="${d.saldo}"></div>
+                <div style="flex:1"><label class="form-label">Frecuencia</label>
+                  <select class="form-input cfg-d-freq">
+                    <option value="mensual" ${(d.frecuencia||'mensual')==='mensual'?'selected':''}>Mensual</option>
+                    <option value="anual"   ${d.frecuencia==='anual'?'selected':''}>Anual</option>
+                    <option value="otra"    ${d.frecuencia==='otra'?'selected':''}>Otra</option>
+                  </select></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <div style="flex:1"><label class="form-label">Cuota</label>
+                  <input class="form-input cfg-d-cuota" type="number" value="${d.cuota||''}"></div>
+                <div style="flex:1"><label class="form-label">Vencimiento</label>
+                  <input class="form-input cfg-d-venc" type="date" value="${d.vencimiento||''}"></div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-outline cfg-add" data-list="cfg-deuda-list" data-tpl="deuda" style="margin-top:8px">+ Agregar deuda</button>
+        <button class="btn btn-primary cfg-save" data-sec="deudas" style="margin-top:8px">Guardar deudas</button>
+      </div>
+
+      <!-- Metas -->
+      <div class="card">
+        <div class="card-title">🎯 Metas de ahorro</div>
+        <div id="cfg-meta-list">
+          ${metas.map((m, i) => `
+            <div class="cfg-item-row" data-i="${i}" data-id="${m.id}">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="form-input cfg-m-nombre" value="${m.nombre}" style="flex:1" placeholder="Nombre meta">
+                <button class="btn btn-danger btn-sm cfg-del-meta" data-i="${i}">✕</button>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <div style="flex:1"><label class="form-label">Objetivo (CLP)</label>
+                  <input class="form-input cfg-m-objetivo" type="number" value="${m.objetivo||''}"></div>
+                <div style="flex:1"><label class="form-label">Fecha objetivo</label>
+                  <input class="form-input cfg-m-fecha" type="month" value="${m.fecha_objetivo||''}"></div>
+              </div>
+            </div>`).join('')}
+        </div>
+        <button class="btn btn-outline cfg-add" data-list="cfg-meta-list" data-tpl="meta" style="margin-top:8px">+ Agregar meta</button>
+        <button class="btn btn-primary cfg-save" data-sec="metas" style="margin-top:8px">Guardar metas</button>
+      </div>
+
+      <!-- Exportar / Importar -->
+      <div class="card">
+        <div class="card-title">📦 Exportar / Importar</div>
         <div class="form-section">
           <button class="btn btn-outline" id="btn-export">⬇️ Exportar JSON</button>
-          <div>
-            <label class="form-label">Importar JSON</label>
-            <input type="file" id="btn-import" accept=".json" class="form-input" style="padding:8px">
-          </div>
+          <div><label class="form-label">Importar JSON</label>
+            <input type="file" id="btn-import" accept=".json" class="form-input" style="padding:8px"></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">🔐 Cambiar contraseña</div>
-        <form id="form-pass" class="form-section">
-          <div class="form-group">
-            <label class="form-label">Contraseña actual</label>
-            <input type="password" class="form-input" id="pass-actual" placeholder="••••••••">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nueva contraseña</label>
-            <input type="password" class="form-input" id="pass-nueva" placeholder="••••••••">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Confirmar</label>
-            <input type="password" class="form-input" id="pass-confirmar" placeholder="••••••••">
-          </div>
-          <button type="submit" class="btn btn-primary">Cambiar contraseña</button>
-        </form>
-        <div class="divider" style="margin-top:12px"></div>
-        <button class="btn btn-outline" id="btn-logout" style="margin-top:12px">Cerrar sesión</button>
-      </div>
-
-      <div class="card">
+        <button class="btn btn-outline" id="btn-logout">Cerrar sesión</button>
+        <div class="divider" style="margin:12px 0"></div>
         <div class="card-title">⚠️ Zona de riesgo</div>
         <button class="btn btn-danger" id="btn-reset">Resetear todos los datos</button>
         <div class="text-muted" style="margin-top:6px">Borra todo y reinicia el onboarding.</div>
