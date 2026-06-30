@@ -246,24 +246,32 @@ const Onboarding = {
   },
 
   bindLista(tipo) {
+    const listIds = { ing: 'ob-ingresos-list', gasto: 'ob-gastos-list', deuda: 'ob-deudas-list', meta: 'ob-metas-list' };
     const addBtns = { ing: 'ob-add-ing', gasto: 'ob-add-gasto', deuda: 'ob-add-deuda', meta: 'ob-add-meta' };
+    const usaUF   = this.datos.supuestos.usa_uf;
+
     document.getElementById(addBtns[tipo])?.addEventListener('click', () => {
-      this._capturarDOM(); // guardar lo escrito antes de re-renderizar
-      if (tipo === 'ing')   this.datos.ingresos.push({ concepto: '', monto: 0 });
-      if (tipo === 'gasto') this.datos.gastos_fijos.push({ concepto: '', monto: 0, es_uf: false });
-      if (tipo === 'deuda') this.datos.deudas.push({ id: Date.now().toString(), nombre: '', saldo: 0, cuota: 0, vencimiento: '', tiene_tramos: false });
-      if (tipo === 'meta')  this.datos.metas.push({ id: Date.now().toString(), nombre: '', objetivo: 0, acumulado: 0, fecha_objetivo: '' });
-      this.renderPaso();
+      const lista = document.getElementById(listIds[tipo]);
+      const idx   = lista.children.length;
+
+      // Insertar nueva fila directamente sin re-renderizar todo
+      const div = document.createElement('div');
+      if (tipo === 'ing')   div.innerHTML = this.renderIngRow({ concepto: '', monto: 0 }, idx);
+      if (tipo === 'gasto') div.innerHTML = this.renderGastoRow({ concepto: '', monto: 0, es_uf: false }, idx, usaUF);
+      if (tipo === 'deuda') div.innerHTML = this.renderDeudaRow({ nombre: '', saldo: 0, cuota: 0, vencimiento: '', frecuencia: 'mensual' }, idx);
+      if (tipo === 'meta')  div.innerHTML = this.renderMetaRow({ nombre: '', objetivo: 0, fecha_objetivo: '' }, idx);
+      lista.appendChild(div.firstElementChild);
+
+      // Bind del botón eliminar en la nueva fila
+      div.firstElementChild?.querySelector(`.ob-del-${tipo}`)?.addEventListener('click', e => {
+        e.currentTarget.closest('.ob-item-row').remove();
+      });
     });
+
+    // Bind eliminar en filas existentes
     document.querySelectorAll(`.ob-del-${tipo}`).forEach(btn => {
       btn.addEventListener('click', () => {
-        this._capturarDOM(); // guardar lo escrito antes de re-renderizar
-        const i = parseInt(btn.dataset.i);
-        if (tipo === 'ing')   this.datos.ingresos.splice(i, 1);
-        if (tipo === 'gasto') this.datos.gastos_fijos.splice(i, 1);
-        if (tipo === 'deuda') this.datos.deudas.splice(i, 1);
-        if (tipo === 'meta')  this.datos.metas.splice(i, 1);
-        this.renderPaso();
+        btn.closest('.ob-item-row').remove();
       });
     });
   },
