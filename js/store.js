@@ -7,25 +7,45 @@ const KEYS = {
   metas:        'fin_metas',
   movimientos:  'fin_movimientos',
   onboarding:   'fin_onboarding_done',
-  inicializado: 'fin_init_v1'
+  inicializado: 'fin_init_v2'
 };
 
 const Store = {
   init() {
-    if (!localStorage.getItem(KEYS.inicializado)) {
-      localStorage.setItem(KEYS.perfil,       JSON.stringify(SEED.perfil));
-      localStorage.setItem(KEYS.supuestos,    JSON.stringify(SEED.supuestos));
-      localStorage.setItem(KEYS.ingresos,     JSON.stringify(SEED.ingresos));
-      localStorage.setItem(KEYS.gastos_fijos, JSON.stringify(SEED.gastos_fijos));
-      localStorage.setItem(KEYS.deudas,       JSON.stringify(SEED.deudas));
-      localStorage.setItem(KEYS.metas,        JSON.stringify(SEED.metas));
-      localStorage.setItem(KEYS.movimientos,  JSON.stringify(SEED.movimientos));
+    // Si venía de v1, conservar movimientos y datos del usuario
+    const hasOld = localStorage.getItem('fin_init_v1');
+    const hasNew = localStorage.getItem(KEYS.inicializado);
+
+    if (hasOld && !hasNew) {
+      const movsGuardados = localStorage.getItem('fin_movimientos');
+      const onbDone       = localStorage.getItem('fin_onboarding_done');
+      localStorage.removeItem('fin_init_v1');
+      this._seedBase();
+      if (movsGuardados) localStorage.setItem(KEYS.movimientos, movsGuardados);
+      if (onbDone)       localStorage.setItem(KEYS.onboarding, onbDone);
+      localStorage.setItem(KEYS.inicializado, '1');
+    } else if (!hasNew) {
+      this._seedBase();
       localStorage.setItem(KEYS.inicializado, '1');
     }
+    // v2 existente: no tocar nada
+  },
+
+  _seedBase() {
+    localStorage.setItem(KEYS.perfil,       JSON.stringify(SEED.perfil));
+    localStorage.setItem(KEYS.supuestos,    JSON.stringify(SEED.supuestos));
+    localStorage.setItem(KEYS.ingresos,     JSON.stringify(SEED.ingresos));
+    localStorage.setItem(KEYS.gastos_fijos, JSON.stringify(SEED.gastos_fijos));
+    localStorage.setItem(KEYS.deudas,       JSON.stringify(SEED.deudas));
+    localStorage.setItem(KEYS.metas,        JSON.stringify(SEED.metas));
+    localStorage.setItem(KEYS.movimientos,  JSON.stringify(SEED.movimientos));
   },
 
   get(key)      { return JSON.parse(localStorage.getItem(KEYS[key]) || 'null'); },
-  set(key, val) { localStorage.setItem(KEYS[key], JSON.stringify(val)); },
+  set(key, val) {
+    localStorage.setItem(KEYS[key], JSON.stringify(val));
+    if (typeof Cloud !== 'undefined' && Cloud.isReady()) Cloud.scheduleSave();
+  },
 
   isOnboardingDone() { return !!localStorage.getItem(KEYS.onboarding); },
   setOnboardingDone() { localStorage.setItem(KEYS.onboarding, '1'); },

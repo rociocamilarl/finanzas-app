@@ -1,7 +1,7 @@
 // Wizard de onboarding — recoge toda la configuración inicial del usuario
 const Onboarding = {
   paso: 1,
-  totalPasos: 7,
+  totalPasos: 6,
   datos: {
     perfil:       { nombre: '', email: '' },
     supuestos:    { uf: 0, usa_uf: false, tipo_cambio: 0, tipo_cambio_label: '', usa_tipo_cambio: false },
@@ -13,9 +13,17 @@ const Onboarding = {
   },
 
   init() {
-    if (Store.isOnboardingDone()) return false; // ya configurado
+    if (Store.isOnboardingDone()) return false;
     this.mostrar();
     return true;
+  },
+
+  // Llamado desde Auth cuando el usuario es nuevo y ya tiene email del OAuth
+  initConEmail(email, nombre, provider) {
+    this.datos.perfil.email    = email;
+    this.datos.perfil.nombre   = nombre.split(' ')[0]; // solo primer nombre
+    this._oauthProvider        = provider;
+    this.mostrar();
   },
 
   mostrar() {
@@ -39,8 +47,7 @@ const Onboarding = {
       this.paso3.bind(this),
       this.paso4.bind(this),
       this.paso5.bind(this),
-      this.paso6.bind(this),
-      this.paso7.bind(this)
+      this.paso6.bind(this)
     ];
     el.innerHTML = renders[this.paso]();
     this.bindPaso();
@@ -209,40 +216,9 @@ const Onboarding = {
     </div>`;
   },
 
-  // ── Paso 7: Contraseña + resumen ─────────────────────────────
-  paso7() {
-    const ing  = this.datos.ingresos.reduce((s, i) => s + (i.monto || 0), 0);
-    const gas  = this.datos.gastos_fijos.reduce((s, g) => {
-      const uf = this.datos.supuestos.uf || 0;
-      return s + (g.es_uf ? (g.monto_uf || 0) * uf : (g.monto || 0));
-    }, 0);
-    const saldo = ing - gas;
-    const clp = n => '$' + Math.round(n).toLocaleString('es-CL');
-
-    return `
-      <div class="ob-hero">🔐</div>
-      <h2 class="ob-title">Casi listo</h2>
-      <p class="ob-desc">Crea una contraseña para proteger tu app y revisa el resumen.</p>
-
-      <div class="form-group">
-        <label class="form-label">Contraseña</label>
-        <input class="form-input" id="ob-pass" type="password" placeholder="Mínimo 6 caracteres">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Confirmar contraseña</label>
-        <input class="form-input" id="ob-pass2" type="password" placeholder="Repite la contraseña">
-      </div>
-
-      <div class="ob-resumen">
-        <div class="ob-resumen-title">Resumen de tu configuración</div>
-        <div class="ob-resumen-row"><span>Nombre</span><strong>${this.datos.perfil.nombre || '—'}</strong></div>
-        <div class="ob-resumen-row"><span>Ingresos</span><strong class="green">${clp(ing)}/mes</strong></div>
-        <div class="ob-resumen-row"><span>Gastos fijos</span><strong class="red">${clp(gas)}/mes</strong></div>
-        <div class="ob-resumen-row"><span>Saldo disponible</span><strong class="${saldo >= 0 ? 'green' : 'red'}">${clp(saldo)}/mes</strong></div>
-        <div class="ob-resumen-row"><span>Deudas</span><strong>${this.datos.deudas.length} registrada(s)</strong></div>
-        <div class="ob-resumen-row"><span>Metas</span><strong>${this.datos.metas.length} registrada(s)</strong></div>
-      </div>`;
-  },
+  // ── Paso 6 ahora incluye resumen final (contraseña eliminada — auth vía OAuth) ──
+  // paso7 redirigido a paso6 en renders[]; este método es el nuevo resumen
+  paso6_resumen_extra() { return ''; }, // reservado
 
   // ── Bind eventos por paso ────────────────────────────────────
   bindPaso() {
@@ -365,13 +341,6 @@ const Onboarding = {
         });
       });
     }
-    if (this.paso === 7) {
-      const pass  = document.getElementById('ob-pass').value;
-      const pass2 = document.getElementById('ob-pass2').value;
-      if (pass.length < 6)   { this.error('Mínimo 6 caracteres'); return false; }
-      if (pass !== pass2)    { this.error('Las contraseñas no coinciden'); return false; }
-      this.datos.password = pass;
-    }
     return true;
   },
 
@@ -406,16 +375,16 @@ const Onboarding = {
       destino: null
     });
 
-    // Guardar contraseña
-    const hash = await Auth.hash(this.datos.password);
-    localStorage.setItem('fin_auth_hash', hash);
-
     Store.setOnboardingDone();
+
+    // Subir datos iniciales a la nube (si hay sesión OAuth activa)
+    if (typeof Cloud !== 'undefined' && Cloud.isReady()) {
+      await Cloud.save();
+    }
 
     // Ocultar onboarding y lanzar app
     document.getElementById('onboarding-screen').classList.add('hidden');
     document.getElementById('app').style.visibility = 'visible';
-    Auth.setSession();
     App.init();
   }
 };
