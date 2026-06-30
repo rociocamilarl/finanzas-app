@@ -163,6 +163,7 @@ const Onboarding = {
   },
 
   renderDeudaRow(d, i) {
+    const freq = d.frecuencia || 'mensual';
     return `<div class="ob-item-row" data-i="${i}">
       <div style="display:flex;gap:8px;align-items:center">
         <input class="form-input ob-d-nombre" placeholder="ej: Crédito consumo" value="${d.nombre || ''}" style="flex:1">
@@ -174,12 +175,20 @@ const Onboarding = {
           <input class="form-input ob-d-saldo" type="number" placeholder="CLP" value="${d.saldo || ''}">
         </div>
         <div class="form-group" style="flex:1;margin-bottom:0">
-          <label class="form-label">Cuota mensual</label>
-          <input class="form-input ob-d-cuota" type="number" placeholder="CLP" value="${d.cuota || ''}">
+          <label class="form-label">Frecuencia de pago</label>
+          <select class="form-input ob-d-freq">
+            <option value="mensual" ${freq==='mensual'?'selected':''}>Mensual</option>
+            <option value="anual"   ${freq==='anual'  ?'selected':''}>Anual</option>
+            <option value="otra"    ${freq==='otra'   ?'selected':''}>Otra / irregular</option>
+          </select>
         </div>
       </div>
+      <div class="ob-d-cuota-row" style="margin-top:6px;${freq==='anual'?'':''}">
+        <label class="form-label">${freq==='anual' ? 'Monto anual' : freq==='mensual' ? 'Cuota mensual' : 'Monto por cuota'}</label>
+        <input class="form-input ob-d-cuota" type="number" placeholder="CLP" value="${d.cuota || ''}">
+      </div>
       <div style="margin-top:6px">
-        <label class="form-label">Vencimiento (opcional)</label>
+        <label class="form-label">Próximo vencimiento</label>
         <input class="form-input ob-d-venc" type="date" value="${d.vencimiento || ''}">
       </div>
     </div>`;
@@ -290,6 +299,9 @@ const Onboarding = {
       document.querySelectorAll('.ob-d-venc').forEach((el, i) => {
         if (this.datos.deudas[i]) this.datos.deudas[i].vencimiento = el.value;
       });
+      document.querySelectorAll('.ob-d-freq').forEach((el, i) => {
+        if (this.datos.deudas[i]) this.datos.deudas[i].frecuencia = el.value;
+      });
     }
     if (this.paso === 6) {
       document.querySelectorAll('.ob-m-nombre').forEach((el, i) => {
@@ -359,6 +371,7 @@ const Onboarding = {
       const cuotas   = document.querySelectorAll('.ob-d-cuota');
       const vencs    = document.querySelectorAll('.ob-d-venc');
       this.datos.deudas = [];
+      const freqs = document.querySelectorAll('.ob-d-freq');
       nombres.forEach((el, i) => {
         const nombre = el.value.trim();
         if (nombre) this.datos.deudas.push({
@@ -368,6 +381,7 @@ const Onboarding = {
           original:    parseFloat(saldos[i].value) || 0,
           cuota:       parseFloat(cuotas[i].value) || 0,
           vencimiento: vencs[i].value || null,
+          frecuencia:  freqs[i]?.value || 'mensual',
           tiene_tramos: false
         });
       });

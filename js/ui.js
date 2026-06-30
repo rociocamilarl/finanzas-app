@@ -203,31 +203,78 @@ const UI = {
         <div class="empty-state"><div class="empty-icon">🏦</div>Sin deudas registradas</div>
       </div>`;
 
-    return deudas.map(d => {
-      const pct = Calc.porcentaje(d.original - d.saldo, d.original || d.saldo);
-      const badge = d.saldo === 0
-        ? '<span class="badge badge-green">SALDADA</span>'
-        : d.vencimiento && new Date(d.vencimiento) < new Date()
-          ? '<span class="badge badge-red">VENCIDA</span>'
-          : '<span class="badge badge-orange">pendiente</span>';
+    const hoy = new Date();
+
+    // Calcular urgencia para ordenar: 0=vencida, 1=próxima (<30d), 2=pendiente, 3=saldada
+    const urgencia = d => {
+      if (d.saldo === 0) return 3;
+      if (!d.vencimiento) return 2;
+      const dias = Math.round((new Date(d.vencimiento) - hoy) / 86400000);
+      if (dias < 0)  return 0;
+      if (dias <= 30) return 1;
+      return 2;
+    };
+
+    const sorted = [...deudas].sort((a, b) => urgencia(a) - urgencia(b));
+
+    return sorted.map(d => {
+      const pct  = Calc.porcentaje(d.original - d.saldo, d.original || d.saldo);
+      const freq = d.frecuencia || 'mensual';
+      const dias = d.vencimiento
+        ? Math.round((new Date(d.vencimiento) - hoy) / 86400000)
+        : null;
+
+      // Badge según estado
+      let badge, colorSaldo;
+      if (d.saldo === 0) {
+        badge = '<span class="badge badge-green">SALDADA</span>';
+        colorSaldo = 'var(--success)';
+      } else if (dias !== null && dias < 0) {
+        badge = '<span class="badge badge-red">VENCIDA</span>';
+        colorSaldo = 'var(--danger)';
+      } else if (dias !== null && dias <= 30) {
+        badge = `<span class="badge badge-orange">vence en ${dias}d</span>`;
+        colorSaldo = 'var(--warning)';
+      } else {
+        badge = '<span class="badge badge-blue">al día</span>';
+        colorSaldo = 'var(--warning)';
+      }
+
+      // Etiqueta de cuota según frecuencia
+      const cuotaLabel = freq === 'anual' ? 'Pago anual' : freq === 'otra' ? 'Cuota' : 'Cuota mensual';
+
+      // Botón de pago: para deudas anuales, solo mostrar si está próxima o vencida
+      const mostrarPago = freq !== 'anual' || (dias !== null && dias <= 60);
+      const placeholderPago = d.cuota
+        ? `Abonar (sugerido: ${this.clp(d.cuota)})`
+        : 'Monto a abonar...';
+
       return `
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="font-weight:700;font-size:15px">${d.nombre}</span>${badge}
+            <div>
+              <span style="font-weight:700;font-size:15px">${d.nombre}</span>
+              <span style="font-size:11px;color:var(--text-s);margin-left:6px">${freq}</span>
+            </div>
+            ${badge}
           </div>
-          <div style="font-size:22px;font-weight:700;color:var(--warning)">${this.clp(d.saldo)}</div>
-          ${d.cuota ? `<div class="card-sub">Cuota mensual: ${this.clp(d.cuota)}</div>` : ''}
-          ${d.vencimiento ? `<div class="card-sub">Vence: ${this.fecha(d.vencimiento)}</div>` : ''}
+          <div style="font-size:22px;font-weight:700;color:${colorSaldo}">${this.clp(d.saldo)}</div>
+          ${d.cuota ? `<div class="card-sub">${cuotaLabel}: ${this.clp(d.cuota)}</div>` : ''}
+          ${d.vencimiento ? `<div class="card-sub">Próximo vencimiento: ${this.fecha(d.vencimiento)}</div>` : ''}
           <div class="progress-wrap mt-4">
-            ${this.progressBar(pct, 'fill-blue')}
+            ${this.progressBar(pct, pct >= 100 ? 'fill-green' : dias !== null && dias < 0 ? 'fill-red' : 'fill-blue')}
             <div style="font-size:11px;color:var(--text-s);margin-top:3px;text-align:right">${pct.toFixed(0)}% pagado</div>
           </div>
+          ${mostrarPago ? `
           <form class="form-abono form-section" data-id="${d.id}" style="margin-top:12px">
             <div style="display:flex;gap:8px">
-              <input type="number" class="form-input abono-monto" placeholder="Registrar abono..." style="flex:1">
+              <input type="number" class="form-input abono-monto" placeholder="${placeholderPago}" style="flex:1">
               <button type="submit" class="btn btn-primary btn-sm">Abonar</button>
             </div>
-          </form>
+          </form>` : `
+          <div style="margin-top:10px;font-size:12px;color:var(--text-s);text-align:center">
+            El botón de pago aparecerá cuando se acerque el vencimiento (30 días antes)
+          </div>`}
         </div>`;
     }).join('');
   },
